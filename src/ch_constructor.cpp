@@ -1,7 +1,7 @@
 #include "defs.h"
 #include "unit_tests.h"
 #include "ch_constructor.h"
-#include "parser.h"
+#include "file_formats.h"
 
 #include <iostream>
 #include <getopt.h>
@@ -98,9 +98,9 @@ int main(int argc, char* argv[])
 	typedef SCGraph<Node, Edge> CHGraph;
 
 	/* Read graph */
+	auto data = readGraph<LvlNode, Shortcut>(informat, infile);
+
 	CHGraph g;
-	Parser::InData<LvlNode,Shortcut> data;
-	Parser::read<LvlNode,Shortcut>(data, infile, informat);
 	g.init<EdgeSortSrc<Edge>, EdgeSortTgt<Edge> >(data);
 
 	/* Build CH */
@@ -114,7 +114,7 @@ int main(int argc, char* argv[])
 	chc.getCHGraph();
 
 	/* Export */
-	Parser::write<LvlNode,Shortcut>(g.getData(), outfile, outformat);
+	writeGraph(outformat, outfile, g.getData());
 
 	return 0;
 }

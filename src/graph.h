@@ -3,7 +3,7 @@
 
 #include "defs.h"
 #include "nodes_and_edges.h"
-#include "parser.h"
+#include "graph_reader.h"
 
 #include <vector>
 #include <list>
@@ -55,7 +55,7 @@ class Graph
 		/* Init the graph from file 'filename' and sort
 		 * the edges according to OutEdgeSort and InEdgeSort. */
 		template <class OutEdgeSort, class InEdgeSort>
-		void init(Parser::InData<Node,Edge>& data);
+		void init(GraphData<Node,Edge>& data);
 
 		class EdgeIt;
 		class OffEdgeIt;
@@ -72,7 +72,12 @@ class Graph
 		Edge const& getEdge(EdgeID edge_id) const;
 		Node const& getNode(NodeID node_id) const;
 		NodeID getOffId(NodeID node_id, EdgeType type) const;
-		Parser::OutData<Node,Edge> getData() const;
+
+		struct OutData {
+			std::vector<Node> const& nodes;
+			std::vector<Edge> const& edges;
+		};
+		OutData getData() const;
 
 		friend void unit_tests::testGraph();
 };
@@ -83,7 +88,7 @@ class Graph
 
 template <typename Node, typename Edge>
 template <class OutEdgeSort, class InEdgeSort>
-void Graph<Node, Edge>::init(Parser::InData<Node,Edge>& data)
+void Graph<Node, Edge>::init(GraphData<Node,Edge>& data)
 {
 	_nodes.swap(data.nodes);
 	_out_edges.swap(data.edges);
@@ -311,9 +316,9 @@ uint Graph<Node, Edge>::getNrOfEdges(NodeID node_id, EdgeType type) const
 }
 
 template <typename Node, typename Edge>
-Parser::OutData<Node,Edge> Graph<Node,Edge>::getData() const
+auto Graph<Node,Edge>::getData() const -> OutData
 {
-	return Parser::OutData<Node,Edge>(_nodes, _out_edges);
+	return OutData{_nodes, _out_edges};
 }
 
 /*

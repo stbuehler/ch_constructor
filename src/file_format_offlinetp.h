@@ -27,7 +27,6 @@ namespace chc {
 
 		struct Edge
 		{
-			EdgeID id = c::NO_EID;
 			NodeID src = c::NO_NID;
 			NodeID tgt = c::NO_NID;
 			uint32_t dist = std::numeric_limits<uint32_t>::max();
@@ -35,9 +34,9 @@ namespace chc {
 
 			Edge() { }
 			Edge(OSMEdge const& edge)
-			: Edge(edge.id, edge.src, edge.tgt, edge.dist, calcTime(edge.dist, edge.type, edge.speed)) { }
-			Edge(EdgeID id, NodeID src, NodeID tgt, uint dist, uint time)
-			: id(id), src(src), tgt(tgt), dist(dist), time(time) { }
+			: Edge(edge.src, edge.tgt, edge.dist, calcTime(edge.dist, edge.type, edge.speed)) { }
+			Edge(NodeID src, NodeID tgt, uint dist, uint time)
+			: src(src), tgt(tgt), dist(dist), time(time) { }
 
 			static uint calcTime(uint dist, uint roadType, int speed);
 

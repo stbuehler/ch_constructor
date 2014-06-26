@@ -110,12 +110,11 @@ namespace chc {
 	}
 
 	template<>
-	OSMEdge text_readEdge<OSMEdge>(std::istream& is, EdgeID edge_id)
+	OSMEdge text_readEdge<OSMEdge>(std::istream& is, EdgeID)
 	{
-		return readLine(is, [edge_id](std::istream& is) {
+		return readLine(is, [](std::istream& is) {
 			OSMEdge edge;
 			is >> edge.src >> edge.tgt >> edge.dist >> edge.type >> edge.speed;
-			edge.id = edge_id;
 			return edge;
 		});
 	}
@@ -127,12 +126,11 @@ namespace chc {
 	}
 
 	template<>
-	Edge text_readEdge<Edge>(std::istream& is, EdgeID edge_id)
+	Edge text_readEdge<Edge>(std::istream& is, EdgeID)
 	{
-		return readLine(is, [edge_id](std::istream& is) {
+		return readLine(is, [](std::istream& is) {
 			Edge edge;
 			is >> edge.src >> edge.tgt >> edge.dist;
-			edge.id = edge_id;
 			return edge;
 		});
 	}

@@ -45,7 +45,7 @@ namespace chc {
 		Edge concat(Edge const& edge1, Edge const& edge2)
 		{
 			assert(edge1.tgt == edge2.src);
-			return Edge(c::NO_EID, edge1.src, edge2.tgt, edge1.dist + edge2.dist, edge1.time + edge2.time);
+			return Edge(edge1.src, edge2.tgt, edge1.dist + edge2.dist, edge1.time + edge2.time);
 		}
 
 		namespace {

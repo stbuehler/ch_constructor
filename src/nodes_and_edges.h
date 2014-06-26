@@ -184,22 +184,21 @@ using MakeCHEdge = typename _MakeCHEdge<typename std::remove_reference<EdgeT>::t
 /* remove possible CHEdge<> with: typename MakeCHEdge<T>::base_edge_type */
 
 template<typename EdgeT>
-MakeCHEdge<EdgeT> make_shortcut(EdgeT const& edge1, EdgeT const& edge2) {
+inline MakeCHEdge<EdgeT> make_shortcut(EdgeT const& edge1, EdgeT const& edge2, EdgeID id1, EdgeID id2) {
 	typedef typename MakeCHEdge<EdgeT>::base_edge_type base;
 	assert(edge1.tgt == edge2.src);
-	return MakeCHEdge<EdgeT>(concat(static_cast<base const&>(edge1), static_cast<base const&>(edge2)), edge1.id, edge2.id, edge1.tgt);
+	return MakeCHEdge<EdgeT>(concat(static_cast<base const&>(edge1), static_cast<base const&>(edge2)), id1, id2, edge1.tgt);
 }
 
 struct Edge
 {
-	EdgeID id = c::NO_EID;
 	NodeID src = c::NO_NID;
 	NodeID tgt = c::NO_NID;
 	uint dist = c::NO_DIST;
 
 	Edge() { }
-	Edge(EdgeID id, NodeID src, NodeID tgt, uint dist)
-		: id(id), src(src), tgt(tgt), dist(dist) { }
+	Edge(NodeID src, NodeID tgt, uint dist)
+		: src(src), tgt(tgt), dist(dist) { }
 
 	uint distance() const { return dist; }
 };
@@ -221,7 +220,6 @@ struct MetricEdge : EdgeT
 
 struct OSMEdge
 {
-	EdgeID id = c::NO_EID;
 	NodeID src = c::NO_NID;
 	NodeID tgt = c::NO_NID;
 	uint dist = c::NO_DIST;
@@ -229,14 +227,14 @@ struct OSMEdge
 	int speed = -1;
 
 	OSMEdge() { }
-	OSMEdge(EdgeID id, NodeID src, NodeID tgt, uint dist, uint type, int speed)
-	: id(id), src(src), tgt(tgt), dist(dist), type(type), speed(speed) { }
+	OSMEdge(NodeID src, NodeID tgt, uint dist, uint type, int speed)
+	: src(src), tgt(tgt), dist(dist), type(type), speed(speed) { }
 
 	uint distance() const { return dist; }
 
 	operator Edge() const
 	{
-		return Edge(id, src, tgt, dist);
+		return Edge(src, tgt, dist);
 	}
 };
 OSMEdge concat(OSMEdge const& edge1, OSMEdge const& edge2);

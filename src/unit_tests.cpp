@@ -42,9 +42,9 @@ void unit_tests::testNodesAndEdges()
 	CHNode<Node> node1(Node(1), 1);
 	CHNode<Node> node2(Node(2), 2);
 
-	MetricEdge edge0(Edge(0, node0.id, node1.id, 42), 23);
-	MetricEdge edge1(Edge(1, node1.id, node2.id, 24), 32);
-	CHEdge ch_edge(make_shortcut(edge0, edge1));
+	MetricEdge edge0(Edge(node0.id, node1.id, 42), 23);
+	MetricEdge edge1(Edge(node1.id, node2.id, 24), 32);
+	CHEdge ch_edge(make_shortcut(edge0, edge1, 0, 1));
 
 	Test(otherNode(edge0, IN) == 0);
 	Test(otherNode(ch_edge, OUT) == 2);

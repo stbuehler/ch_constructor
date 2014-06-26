@@ -18,18 +18,15 @@ class SCGraph : public Graph<NodeT, CHEdge<EdgeT> >
 		typedef Graph<NodeT, Shortcut> BaseGraph;
 		using BaseGraph::_out_edges;
 		using BaseGraph::_in_edges;
-		using BaseGraph::_id_to_index;
-		using BaseGraph::_next_id;
+		using BaseGraph::_edges;
+		using BaseGraph::_out_offsets;
+		using BaseGraph::_in_offsets;
 		using typename BaseGraph::OutEdgeSort;
 
 		std::vector<uint> _node_levels;
 
-		std::vector<Shortcut> _edges_dump;
-
 		uint _next_lvl = 0;
 
-		void _addNewEdge(Shortcut& new_edge,
-				std::vector<Shortcut>& new_edge_vec);
 	public:
 		template <typename Data>
 		void init(Data&& data)
@@ -42,12 +39,14 @@ class SCGraph : public Graph<NodeT, CHEdge<EdgeT> >
 		void restructure(std::vector<NodeID> const& deleted,
 				std::vector<bool> const& to_delete,
 				std::vector<Shortcut>& new_shortcuts);
-		void rebuildCompleteGraph();
 
+		void rebuildCompleteGraph();
 		bool isUp(Shortcut const& edge, EdgeType direction) const;
 
-		/* destroys internal data structures */
+		/* clears internal data structures */
 		GraphCHOutData<NodeT, Shortcut> exportData();
+
+		GraphCHOutData<NodeT, Shortcut> getData() const;
 };
 
 template <typename NodeT, typename EdgeT>
@@ -61,109 +60,69 @@ void SCGraph<NodeT, EdgeT>::restructure(
 	/*
 	 * Process contracted nodes.
 	 */
-	for (uint i(0); i<deleted.size(); i++) {
-		_node_levels[deleted[i]] = _next_lvl;
-		assert(to_delete[deleted[i]]);
+	for (auto delNode: deleted) {
+		_node_levels[delNode] = _next_lvl;
+		assert(to_delete[delNode]);
 	}
-	_next_lvl++;
+	++_next_lvl;
 
-	/*
-	 * Process new shortcuts.
-	 */
-	std::vector<Shortcut> new_edge_vec;
-	new_edge_vec.reserve(_out_edges.size() + new_shortcuts.size());
+	/* filter and sort new shortcuts: only use if center_node was actually contracted */
+	erase_if(new_shortcuts, [&to_delete](Shortcut const& sc) {
+		if (!to_delete[sc.center_node]) return true;
+		/* can't contract src, tgt and center_node in same round */
+		assert(!to_delete[sc.src] && !to_delete[sc.tgt]);
+		return false;
+	});
 
-	std::sort(new_shortcuts.begin(), new_shortcuts.end(), outEdgeSort);
+	std::sort(new_shortcuts.begin(), new_shortcuts.end(), [](Shortcut const& a, Shortcut const& b) {
+		/* OutEdgeSort + order shorter edges first */
+		return
+			(a.src < b.src || (a.src == b.src &&
+			(a.tgt < b.tgt || (a.tgt == b.tgt &&
+			(a.distance() < b.distance()
+		)))));
+	});
 
-	/* Manually merge the new_shortcuts and _out_edges vector. */
-	uint j(0);
-	for (uint i(0); i<_out_edges.size(); i++) {
+	auto eq = [](Shortcut const& a, Shortcut const& b) { return equalEndpoints(a, b); };
 
-		Shortcut const& edge(_out_edges[i]);
-		/* edge greater than new_sc */
-		for (;j < new_shortcuts.size() && outEdgeSort(new_shortcuts[j], edge); ++j) {
-			Shortcut& new_sc(new_shortcuts[j]);
-			if (to_delete[new_sc.center_node]) {
-				_addNewEdge(new_sc, new_edge_vec);
-				assert(!to_delete[new_sc.src] && !to_delete[new_sc.tgt]);
+	/* erase duplicate shortcuts: only keep shortest */
+	new_shortcuts.erase(std::unique(new_shortcuts.begin(), new_shortcuts.end(), eq), new_shortcuts.end());
+
+	/* replace existing shortcut, if new one is shorter; quick-contract may generate suboptimal shortcuts */
+	erase_if(new_shortcuts, [this, &outEdgeSort](Shortcut const& sc) {
+		auto src_out_edges = BaseGraph::nodeEdges(sc.src, OUT);
+		auto range = std::equal_range(src_out_edges.first, src_out_edges.last, sc, outEdgeSort);
+		for (auto i = range.first; i != range.second; ++i) {
+			if (sc.distance() >= i->distance()) return true; /* remove - not short enough */
+			if (c::NO_NID != i->center_node) {
+				_edges[*i.pos] = sc;
+				return true;
 			}
 		}
 
-		/* if edge and new_sc are "equal", i.e. have same endpoints, first add
-		 * the old edge and overwrite on demand later
-		 */
+		return false;
+	});
 
-		debug_assert(j >= new_shortcuts.size() || !outEdgeSort(new_shortcuts[j], edge));
-
-		/* edge less than or equal new_sc */
-		if (!to_delete[edge.src] && !to_delete[edge.tgt]) {
-			_addNewEdge(_out_edges[i], new_edge_vec);
-		}
-		else {
-			_edges_dump.push_back(_out_edges[i]);
-		}
-	}
-
-	/* Rest of new_shortcuts */
-	for (; j < new_shortcuts.size(); ++j) {
-		Shortcut& new_sc(new_shortcuts[j]);
-		if (to_delete[new_sc.center_node]) {
-			_addNewEdge(new_sc, new_edge_vec);
-			assert(!to_delete[new_sc.src] && !to_delete[new_sc.tgt]);
-		}
-	}
-
-	/*
-	 * Build new graph structures.
+	/* drop edge (from index lists) if either source or target node was contracted
+	 * the edge will still be in _edges
 	 */
-	_out_edges.swap(new_edge_vec);
-	debug_assert(std::is_sorted(_out_edges.begin(), _out_edges.end(), outEdgeSort));
+	auto drop_edge = [&to_delete](EdgeT const& edge) {
+		return to_delete[edge.src] || to_delete[edge.tgt];
+	};
+	_out_edges.erase_if(drop_edge);
+	_in_edges.erase_if(drop_edge);
 
-	_in_edges.assign(_out_edges.begin(), _out_edges.end());
-	BaseGraph::sortInEdges();
-	BaseGraph::initOffsets();
-}
+	_edges.insert(_edges.end(), make_move_iterator(new_shortcuts.begin()), make_move_iterator(new_shortcuts.end()));
 
-template <typename NodeT, typename EdgeT>
-void SCGraph<NodeT, EdgeT>::_addNewEdge(Shortcut& new_edge,
-		std::vector<Shortcut>& new_edge_vec)
-{
-	if (!new_edge_vec.empty() && (c::NO_EID == new_edge.id)) {
-		Shortcut& last_edge(new_edge_vec.back());
-
-		if (equalEndpoints(new_edge, last_edge)) {
-			/* ignore new edges if they are not better than what we already have */
-			if (new_edge.distance() >= last_edge.distance()) return;
-
-			/* only replace shortcut edges */
-			if (c::NO_NID == last_edge.center_node) {
-				/* reuse already assigned id */
-				new_edge.id = last_edge.id;
-				last_edge = new_edge;
-				return;
-			}
-			/* otherwise simply add a new "duplicate" edge; don't remove
-			 * edges from original graph - they might be useful for visualization
-			 */
-		}
-	}
-
-	if (c::NO_EID == new_edge.id) {
-		new_edge.id = _next_id++;
-	}
-	new_edge_vec.push_back(new_edge);
+	BaseGraph::update();
 }
 
 template <typename NodeT, typename EdgeT>
 void SCGraph<NodeT, EdgeT>::rebuildCompleteGraph()
 {
-	assert(_out_edges.empty() && _in_edges.empty());
-
-	_out_edges.swap(_edges_dump);
-	_in_edges = _out_edges;
-	_edges_dump.clear();
-
-	BaseGraph::update();
+	_out_edges.reset_sorted(typename BaseGraph::OutEdgeSort());
+	_in_edges.reset_sorted(typename BaseGraph::InEdgeSort());
+	BaseGraph::initOffsets();
 }
 
 template <typename NodeT, typename EdgeT>
@@ -187,30 +146,18 @@ bool SCGraph<NodeT, EdgeT>::isUp(Shortcut const& edge, EdgeType direction) const
 template <typename NodeT, typename EdgeT>
 auto SCGraph<NodeT, EdgeT>::exportData() -> GraphCHOutData<NodeT, Shortcut>
 {
-	std::vector<Shortcut>* edges_source;
-	std::vector<Shortcut> edges;
+	_out_edges.indices = decltype(_out_edges.indices)();
+	_in_edges.indices = decltype(_in_edges.indices)();
+	_out_offsets = decltype(_out_offsets)();
+	_in_offsets = decltype(_in_offsets)();
 
-	_id_to_index = decltype(_id_to_index)();
+	return getData();
+}
 
-	if (_out_edges.empty() && _in_edges.empty()) {
-		edges_source = &_edges_dump;
-	}
-	else {
-		assert(_edges_dump.empty());
-		edges_source = &_out_edges;
-		_in_edges = decltype(_in_edges)();
-	}
-
-	edges.resize(edges_source->size());
-	for (auto const& edge: *edges_source) {
-		edges[edge.id] = edge;
-	}
-
-	_out_edges = std::move(edges);
-
-	_edges_dump = decltype(_edges_dump)();
-
-	return GraphCHOutData<NodeT, Shortcut>{BaseGraph::_nodes, _node_levels, _out_edges};
+template <typename NodeT, typename EdgeT>
+auto SCGraph<NodeT, EdgeT>::getData() const -> GraphCHOutData<NodeT, Shortcut>
+{
+	return GraphCHOutData<NodeT, Shortcut>{BaseGraph::_nodes, _node_levels, _edges};
 }
 
 }

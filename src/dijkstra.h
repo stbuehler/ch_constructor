@@ -115,7 +115,9 @@ uint Dijkstra<Node,Edge>::calcShopa(NodeID src, NodeID tgt,
 template <typename Node, typename Edge>
 void Dijkstra<Node,Edge>::_relaxAllEdges(PQ& pq, PQElement const& top)
 {
-	for (auto const& edge: _g.nodeEdges(top.node, OUT)) {
+	for (auto const& edge_it: counting_iteration(_g.nodeEdges(top.node, OUT))) {
+		auto const& edge = *edge_it;
+
 		NodeID tgt(edge.tgt);
 		uint new_dist(top.distance() + edge.distance());
 
@@ -125,7 +127,7 @@ void Dijkstra<Node,Edge>::_relaxAllEdges(PQ& pq, PQElement const& top)
 			}
 			_dists[tgt] = new_dist;
 
-			pq.push(PQElement(tgt, edge.id, new_dist));
+			pq.push(PQElement(tgt, *edge_it.pos, new_dist));
 		}
 	}
 }
@@ -265,7 +267,9 @@ void CHDijkstra<Node,Edge>::_relaxAllEdges(PQ& pq, PQElement const& top)
 	EdgeType dir(top.direction);
 	// TODO When edges are sorted accordingly: loop while
 	// edge is up.
-	for (auto const& edge: _g.nodeEdges(top.node, dir)) {
+	for (auto const& edge_it: counting_iteration(_g.nodeEdges(top.node, dir))) {
+		auto const& edge = *edge_it;
+
 		if (_g.isUp(edge, dir)) {
 			NodeID other_node(otherNode(edge, dir));
 			uint new_dist(top.distance() + edge.distance());
@@ -276,7 +280,7 @@ void CHDijkstra<Node,Edge>::_relaxAllEdges(PQ& pq, PQElement const& top)
 				}
 				_dists[dir][other_node] = new_dist;
 
-				pq.push(PQElement(other_node, edge.id, dir, new_dist));
+				pq.push(PQElement(other_node, *edge_it.pos, dir, new_dist));
 			}
 		}
 	}

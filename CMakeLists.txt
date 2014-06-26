@@ -45,6 +45,7 @@ endif(NOT VERBOSE)
 add_library(common OBJECT
 	src/nodes_and_edges.cpp
 	src/file_formats.cpp
+	src/file_format_offlinetp.cpp
 )
 
 add_executable(ch_constructor

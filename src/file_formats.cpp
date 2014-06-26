@@ -59,6 +59,9 @@ namespace chc {
 		else if (format == "STEFAN_CH") {
 			return FileFormat::STEFAN_CH;
 		}
+		else if (format == "OFFLINETP") {
+			return FileFormat::OFFLINETP;
+		}
 		else {
 			std::cerr << "Unknown fileformat: " << format << "\n";
 		}
@@ -81,6 +84,8 @@ namespace chc {
 			return "FMI_CH";
 		case FileFormat::STEFAN_CH:
 			return "STEFAN_CH";
+		case FileFormat::OFFLINETP:
+			return "OFFLINETP";
 		}
 
 		std::cerr << "Unknown fileformat: " << static_cast<int>(format) << "\n";

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "file_formats_helper.h"
+#include "file_format_offlinetp.h"
 
 namespace chc {
 	// "default" text serialization of some nodes and edge types,
@@ -157,8 +158,8 @@ namespace chc {
 
 
 
-	enum class FileFormat { STD, SIMPLE, FMI, FMI_DIST, FMI_CH, STEFAN_CH };
-	static constexpr FileFormat LastFileFormat = FileFormat::STEFAN_CH;
+	enum class FileFormat { STD, SIMPLE, FMI, FMI_DIST, FMI_CH, STEFAN_CH, OFFLINETP };
+	static constexpr FileFormat LastFileFormat = FileFormat::OFFLINETP;
 
 	FileFormat toFileFormat(std::string const& format);
 	std::string to_string(FileFormat format);
@@ -181,6 +182,8 @@ namespace chc {
 			break;
 		case FileFormat::STEFAN_CH:
 			break;
+		case FileFormat::OFFLINETP:
+			break;
 		}
 		std::cerr << "Unknown input fileformat!" << std::endl;
 		std::exit(1);
@@ -202,6 +205,8 @@ namespace chc {
 		case FileFormat::FMI_CH:
 			break;
 		case FileFormat::STEFAN_CH:
+			break;
+		case FileFormat::OFFLINETP:
 			break;
 		}
 		std::cerr << "Unknown input fileformat!" << std::endl;
@@ -235,6 +240,9 @@ namespace chc {
 			return;
 		case FileFormat::STEFAN_CH:
 			callable(readGraphForWriter<FormatSTEFAN_CH::Writer>(read_format, filename));
+			return;
+		case FileFormat::OFFLINETP:
+			callable(readGraphForWriter<FormatOfflineTP::Writer>(read_format, filename));
 			return;
 		}
 		std::cerr << "Unknown output fileformat!" << std::endl;
@@ -282,6 +290,9 @@ namespace chc {
 		case FileFormat::STEFAN_CH:
 			writeCHGraphFile<FormatSTEFAN_CH::Writer>(filename, data);
 			return;
+		case FileFormat::OFFLINETP:
+			writeCHGraphFile<FormatOfflineTP::Writer>(filename, data);
+			return;
 		}
 		std::cerr << "Unknown output fileformat!" << std::endl;
 		std::exit(1);
@@ -326,6 +337,8 @@ namespace chc {
 		case FileFormat::STEFAN_CH:
 			writeGraphFile<FormatSTEFAN_CH::Writer>(filename, data);
 			return;
+		case FileFormat::OFFLINETP:
+			break;
 		}
 		std::cerr << "Unknown output fileformat!" << std::endl;
 		std::exit(1);

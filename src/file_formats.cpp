@@ -52,6 +52,9 @@ namespace chc {
 		else if (format == "FMI_CH") {
 			return FMI_CH;
 		}
+		else if (format == "OFFLINETP") {
+			return OFFLINETP;
+		}
 		else {
 			std::cerr << "Unknown fileformat!" << "\n";
 		}

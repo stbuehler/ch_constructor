@@ -2,6 +2,7 @@
 #define _FILE_FORMATS_H
 
 #include "file_formats_helper.h"
+#include "file_format_offlinetp.h"
 
 namespace chc {
 	// "default" text serialization of some nodes and edge types,
@@ -113,7 +114,7 @@ namespace chc {
 
 
 
-	enum FileFormat { STD, SIMPLE, FMI, FMI_CH };
+	enum FileFormat { STD, SIMPLE, FMI, FMI_CH, OFFLINETP };
 	FileFormat toFileFormat(std::string const& format);
 
 	template<typename Node, typename Edge>
@@ -127,6 +128,7 @@ namespace chc {
 		case FMI:
 			return FormatFMI::Reader::readGraph<Node, Edge>(filename);
 		case FMI_CH:
+		case OFFLINETP:
 			break;
 		}
 		std::cerr << "Unknown input fileformat: " << format << std::endl;
@@ -145,6 +147,7 @@ namespace chc {
 		case FMI:
 			callable(FormatFMI::Reader::readGraph(filename));
 		case FMI_CH:
+		case OFFLINETP:
 			break;
 		}
 		std::cerr << "Unknown input fileformat: " << format << std::endl;
@@ -173,6 +176,9 @@ namespace chc {
 			break;
 		case FMI_CH:
 			callable(readGraphForWriter<FormatFMI_CH::Writer>(read_format, filename));
+			return;
+		case OFFLINETP:
+			callable(readGraphForWriter<FormatOfflineTP::Writer>(read_format, filename));
 			return;
 		}
 		std::cerr << "Unknown output fileformat: " << write_format << std::endl;
@@ -208,6 +214,9 @@ namespace chc {
 			break;
 		case FMI_CH:
 			writeCHGraphFile<FormatFMI_CH::Writer>(filename, data);
+			return;
+		case OFFLINETP:
+			writeCHGraphFile<FormatOfflineTP::Writer>(filename, data);
 			return;
 		}
 		std::cerr << "Unknown output fileformat: " << format << std::endl;

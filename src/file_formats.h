@@ -244,7 +244,10 @@ namespace chc {
 	template<typename Writer, typename NodeT, typename EdgeT>
 	inline void writeCHGraphFile(std::string const& filename, GraphCHOutData<NodeT, EdgeT> const& data)
 	{
-		std::ofstream os(filename.c_str());
+		std::vector<char> outputBuffer(512*1024);
+		std::ofstream os;
+		os.rdbuf()->pubsetbuf(outputBuffer.data(), outputBuffer.size());
+		os.open(filename.c_str());
 		os.precision(7);
 		os << std::fixed;
 

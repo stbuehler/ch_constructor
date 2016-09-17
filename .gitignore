@@ -4,3 +4,4 @@ src/ch_constructor
 src/run_tests
 src/*.o
 *build/
+CMakeLists.txt.user

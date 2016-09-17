@@ -43,19 +43,34 @@ endif(NOT VERBOSE)
 # compile shared sources only once, and reuse object files in both,
 # as they are compiled with the same options anyway
 add_library(common OBJECT
-	src/nodes_and_edges.cpp
-	src/file_formats.cpp
+	src/chgraph.h
+	src/defs.h
+	src/dijkstra.h
+	src/enum_array.h
+	src/enum_helpers.h
 	src/file_format_offlinetp.cpp
+	src/file_format_offlinetp.h
+	src/file_formats.cpp
+	src/file_formats.h
+	src/function_traits.h
+	src/graph.h
+	src/indexed_container.h
+	src/nodes_and_edges.cpp
+	src/nodes_and_edges.h
+	src/track_time.h
 )
 
 add_executable(ch_constructor
 	src/ch_constructor.cpp
+	src/ch_constructor.h
+	src/offtp/offtp_file.cpp
 	$<TARGET_OBJECTS:common>
 )
 
 add_executable(run_tests
 	src/run_tests.cpp
 	src/unit_tests.cpp
+	src/unit_tests.h
 	$<TARGET_OBJECTS:common>
 )
 
